@@ -1,0 +1,81 @@
+#include "my_usart.h"
+
+void GPIOUsart2_Config(void)
+{
+	/* Enable GPIO clock */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
+  GPIO_InitTypeDef GPIO_InitStructure;
+	/* Configure USARTy Rx as input floating */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  /* Configure USARTy Tx as alternate function push-pull */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+}
+
+void USART2_Config(void)
+{
+	/* USARTy and USARTz configured as follow:
+        - BaudRate = 230400 baud  
+        - Word Length = 8 Bits
+        - One Stop Bit
+        - Even parity
+        - Hardware flow control disabled (RTS and CTS signals)
+        - Receive and transmit enabled
+  */
+  /* Enable USARTy Clock */
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+  USART_InitTypeDef USART_InitStructure;
+  USART_InitStructure.USART_BaudRate = 9600;
+  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  USART_InitStructure.USART_Parity = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  
+  /* Configure USARTy */
+  USART_Init(USART2, &USART_InitStructure);
+  
+  /* Enable the USARTy */
+  USART_Cmd(USART2, ENABLE);
+}
+
+void USART_PutChar(USART_TypeDef* USARTx, uint8_t ch)
+{
+	/* Loop until USARTy DR register is empty */ 
+    		while(USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
+    		{
+    		}
+	/* Send one byte from USARTy to USARTz */
+   			 USART_SendData(USARTx, ch);
+}
+
+void USART_PutString(USART_TypeDef* USARTx, uint8_t *str)
+{
+	while(*str != 0)
+	{
+		USART_PutChar(USARTx, *str);
+		str++;
+	}
+}
+
+void USART_PutNumber(USART_TypeDef* USARTx, uint32_t x)
+{
+  char value[10]; //a temp array to hold results of conversion
+  int i = 0; //loop index
+  
+  do
+  {
+    value[i++] = (char)(x % 10) + '0'; //convert integer to character
+    x /= 10;
+  } while(x);
+  
+  while(i) //send data
+  {
+    USART_PutChar(USARTx, value[--i]); 
+  }
+}
+
